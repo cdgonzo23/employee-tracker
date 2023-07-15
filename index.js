@@ -5,13 +5,6 @@ const prompt = inquirer.createPromptModule();
 
 let db;
 
-const getAll = (tableName) => {
-    db.query('SELECT * FROM ??', tableName, (err, results) => {
-        console.table(results);
-        init();
-    });
-}
-
 const insertEmployee = (data) => {
     db.query('INSERT INTO employees SET ?', data, (err, result) => {
         if (err) {
@@ -37,7 +30,7 @@ const insertDepartment = (data) => {
         if (err) {
             return console.error(err);
         }
-        console.log('Added Role');
+        console.log('Added Department');
         init();
     });
 };
@@ -46,15 +39,26 @@ const handleAction = ({ action }) => {
     console.log(`ACTION ${action}`);
     switch(action) {
         case 'View All Employees': {
-            getAll('employees');
+            db.query('SELECT roles.id AS id, employees.first_name AS first_name, employees.last_name AS last_name, roles.title AS title, roles.salary AS salary, departments.name AS department, manager.last_name AS manager FROM employees LEFT JOIN employees manager ON manager.id = employees.manager_id JOIN roles ON employees.role_id = roles.id JOIN departments ON roles.department_id = departments.id',
+            (err, results) => {
+                console.table(results);
+                init();
+            });
             break;
         }
         case 'View All Departments': {
-            getAll('departments');
+            db.query('SELECT * FROM departments', (err, results) => {
+                console.table(results);
+                init();
+            });
             break;
         }
         case 'View All Roles': {
-            getAll('roles');
+            db.query('SELECT employees.id AS id, roles.title AS title, departments.name AS department, roles.salary AS salary FROM roles JOIN departments ON roles.department_id = departments.id',
+            (err, results) => {
+                console.table(results);
+                init();
+            });
             break;
         }
         case 'Add an Employee': {
@@ -65,8 +69,34 @@ const handleAction = ({ action }) => {
                 },
                 {
                     message: 'Enter Last Name',
-                    name: 'last_name'
+                    name: 'last_name',
                 },
+                // {
+                //     message: 'What is the employees role?',
+                //     type: 'rawList',
+                //     name: 'role_id',
+                //     choices: [
+                //         'Salesperson',
+                //         'Lead Engineer',
+                //         'Software Engineer',
+                //         'Accountant',
+                //         'Account Manager',
+                //         'Legal Team Lead',
+                //         'Lawyer',
+                //         'Customer Service',
+                //     ],
+                // },
+                // {
+                //     message: 'Who is the employees manager?',
+                //     type: 'rawList',
+                //     name: 'manager_id',
+                //     choices: [
+                //         'John Doe',
+                //         'Jane Wilson',
+                //         'Paula Williams',
+                //         'Ben Lawson',
+                //     ],
+                // },
             ]).then(insertEmployee);
             break;
         }
@@ -78,8 +108,21 @@ const handleAction = ({ action }) => {
                 },
                 {
                     message: 'What is the salary of the role?',
-                    name: 'salary'
+                    name: 'salary',
                 },
+                // {
+                //     message: 'Which department does the role belong to?',
+                //     type: 'rawList',
+                //     name: 'department_id',
+                //     choices: [
+                //         'Engineering',
+                //         'Marketing',
+                //         'Accouting',
+                //         'Sales',
+                //         'Legal',
+                //         'Finance',
+                //     ],
+                // },
             ]).then(insertRole);
             break;
         }
