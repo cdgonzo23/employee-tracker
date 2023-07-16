@@ -35,6 +35,105 @@ const insertDepartment = (data) => {
     });
 };
 
+const departmentArr = [];
+
+const departmentList = () => {
+    db.query('SELECT departments.name AS department FROM departments', (err, results) => {
+        for (const element of results) {
+            departmentArr.push(element.department)
+        }
+    })
+}
+
+const rolesArr = [];
+
+const rolesList = () => {
+    db.query('SELECT roles.title AS role FROM roles', (err, results) => {
+        for (const element of results) {
+            // console.log(element.role)
+            rolesArr.push(element.role);
+        }
+    })
+}
+
+const employeesArr = [];
+const managerArr = ['None'];
+
+const employeeList = () => {
+    db.query('SELECT employees.last_name AS employees FROM employees', (err, results) => {
+        for (const element of results) {
+            employeesArr.push(element.employees);
+            managerArr.push(element.employees);
+        }
+    })
+}
+
+const addARole = () => {
+    departmentList();
+    prompt([
+        {
+            message: 'What is the title of the role?',
+            name: 'title',
+        },
+        {
+            message: 'What is the salary of the role?',
+            name: 'salary',
+        },
+        {
+            message: 'Which department does the role belong to?',
+            type: 'rawlist',
+            name: 'department_id',
+            choices: departmentArr,
+        },
+    ]).then(insertRole);
+}
+
+const addAnEmployee = () => {
+    rolesList();
+    employeeList();
+    prompt([
+        {
+            message: 'Enter First Name',
+            name: 'first_name',
+        },
+        {
+            message: 'Enter Last Name',
+            name: 'last_name',
+        },
+        {
+            message: 'What is the employees role?',
+            type: 'rawlist',
+            name: 'role_id',
+            choices: rolesArr,
+        },
+        {
+            message: 'Who is the employees manager?',
+            type: 'rawlist',
+            name: 'manager_id',
+            choices: managerArr,
+        },
+    ]).then(insertEmployee);
+}
+
+const updateAnEmployee = () => {
+    rolesList();
+    employeeList();
+    prompt([
+        {
+            message: 'Which employees role do you want to update?',
+            type: 'rawlist',
+            name: 'last_name',
+            choices: employeesArr,
+        },
+        {
+            message: 'Which role do you want to assign the selected employee?',
+            type: 'rawlist',
+            name: 'role_id',
+            choices: rolesArr,
+        },
+    ]).then(insertEmployee);
+}
+
 const handleAction = ({ action }) => {
     console.log(`ACTION ${action}`);
     switch(action) {
@@ -54,7 +153,7 @@ const handleAction = ({ action }) => {
             break;
         }
         case 'View All Roles': {
-            db.query('SELECT employees.id AS id, roles.title AS title, departments.name AS department, roles.salary AS salary FROM roles JOIN departments ON roles.department_id = departments.id',
+            db.query('SELECT roles.id AS id, roles.title AS title, departments.name AS department, roles.salary AS salary FROM roles JOIN departments ON roles.department_id = departments.id',
             (err, results) => {
                 console.table(results);
                 init();
@@ -62,68 +161,15 @@ const handleAction = ({ action }) => {
             break;
         }
         case 'Add an Employee': {
-            prompt([
-                {
-                    message: 'Enter First Name',
-                    name: 'first_name',
-                },
-                {
-                    message: 'Enter Last Name',
-                    name: 'last_name',
-                },
-                // {
-                //     message: 'What is the employees role?',
-                //     type: 'rawList',
-                //     name: 'role_id',
-                //     choices: [
-                //         'Salesperson',
-                //         'Lead Engineer',
-                //         'Software Engineer',
-                //         'Accountant',
-                //         'Account Manager',
-                //         'Legal Team Lead',
-                //         'Lawyer',
-                //         'Customer Service',
-                //     ],
-                // },
-                // {
-                //     message: 'Who is the employees manager?',
-                //     type: 'rawList',
-                //     name: 'manager_id',
-                //     choices: [
-                //         'John Doe',
-                //         'Jane Wilson',
-                //         'Paula Williams',
-                //         'Ben Lawson',
-                //     ],
-                // },
-            ]).then(insertEmployee);
+            addAnEmployee();
+            break;
+        }
+        case 'Update an Employee Role': {
+            updateAnEmployee();
             break;
         }
         case 'Add a Role': {
-            prompt([
-                {
-                    message: 'What is the title of the role?',
-                    name: 'title',
-                },
-                {
-                    message: 'What is the salary of the role?',
-                    name: 'salary',
-                },
-                // {
-                //     message: 'Which department does the role belong to?',
-                //     type: 'rawList',
-                //     name: 'department_id',
-                //     choices: [
-                //         'Engineering',
-                //         'Marketing',
-                //         'Accouting',
-                //         'Sales',
-                //         'Legal',
-                //         'Finance',
-                //     ],
-                // },
-            ]).then(insertRole);
+            addARole();
             break;
         }
         case 'Add a Department': {
@@ -141,6 +187,8 @@ const handleAction = ({ action }) => {
     }
 }
 
+
+
 const init = () => {
     prompt({
         message: 'What would you like to do?',
@@ -149,7 +197,7 @@ const init = () => {
         choices: [
             'View All Employees',
             'Add an Employee',
-            // 'Update an Employee Role',
+            'Update an Employee Role',
             'View All Roles',
             'Add a Role',
             'View All Departments',
