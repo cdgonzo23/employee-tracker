@@ -5,6 +5,54 @@ const prompt = inquirer.createPromptModule();
 
 let db;
 
+//  Functions for creatinf the array of choices for Departments, Roles, and Employees
+const departmentList = () => {
+    return (
+        db
+        .promise()
+        .query('SELECT * FROM departments')
+        .then(([data]) => {
+            return data.map(({ name, id }) => ({
+                name: name,
+                value: id,
+            }));
+        })
+        .catch((err) => console.error(err))
+    );
+};
+
+const rolesList = () => {
+    return (
+        db
+        .promise()
+        .query('SELECT * FROM roles')
+        .then(([data]) => {
+            return data.map(({ title, id }) => ({
+                name: title,
+                value: id,
+            }));
+        })
+        .catch((err) => console.error(err))
+    );
+};
+
+const employeeList = () => {
+    return (
+        db
+        .promise()
+        .query('SELECT * FROM employees')
+        .then(([data]) => {
+            return data.map(({ first_name, last_name, id }) => ({
+                name: `${first_name} ${last_name}`,
+                value: id,
+            }));
+        })
+        .catch((err) => console.error(err))
+    );
+};
+
+
+// Queries to insert a new employee, new role, and new department
 const insertEmployee = (data) => {
     db.query('INSERT INTO employees SET ?', data, (err, result) => {
         if (err) {
@@ -35,41 +83,19 @@ const insertDepartment = (data) => {
     });
 };
 
-const departmentArr = [];
-
-const departmentList = () => {
-    db.query('SELECT departments.name AS department FROM departments', (err, results) => {
-        for (const element of results) {
-            departmentArr.push(element.department)
+//  Function for updating an employee role
+const updateEmployee = (data) => {
+    db.query('UPDATE employees SET role_id = ? WHERE id = ?', [ data.role_id, data.id ], (err, result) => {
+        if (err) {
+            return console.error(err);
         }
-    })
-}
+        console.log('Updated Employee');
+        init();
+    });
+};
 
-const rolesArr = [];
-
-const rolesList = () => {
-    db.query('SELECT roles.title AS role FROM roles', (err, results) => {
-        for (const element of results) {
-            // console.log(element.role)
-            rolesArr.push(element.role);
-        }
-    })
-}
-
-const employeesArr = [];
-const managerArr = ['None'];
-
-const employeeList = () => {
-    db.query('SELECT employees.last_name AS employees FROM employees', (err, results) => {
-        for (const element of results) {
-            employeesArr.push(element.employees);
-            managerArr.push(element.employees);
-        }
-    })
-}
-
+// Functions for creating the prompt system for adding a role, adding an empoyee, and updating an employee role
 const addARole = () => {
-    departmentList();
     prompt([
         {
             message: 'What is the title of the role?',
@@ -83,14 +109,12 @@ const addARole = () => {
             message: 'Which department does the role belong to?',
             type: 'rawlist',
             name: 'department_id',
-            choices: departmentArr,
+            choices: departmentList,
         },
     ]).then(insertRole);
-}
+};
 
 const addAnEmployee = () => {
-    rolesList();
-    employeeList();
     prompt([
         {
             message: 'Enter First Name',
@@ -104,41 +128,40 @@ const addAnEmployee = () => {
             message: 'What is the employees role?',
             type: 'rawlist',
             name: 'role_id',
-            choices: rolesArr,
+            choices: rolesList,
         },
         {
             message: 'Who is the employees manager?',
             type: 'rawlist',
             name: 'manager_id',
-            choices: managerArr,
+            choices: employeeList,
         },
     ]).then(insertEmployee);
-}
+};
 
 const updateAnEmployee = () => {
-    rolesList();
-    employeeList();
     prompt([
         {
             message: 'Which employees role do you want to update?',
             type: 'rawlist',
             name: 'last_name',
-            choices: employeesArr,
+            choices: employeeList,
         },
         {
             message: 'Which role do you want to assign the selected employee?',
             type: 'rawlist',
             name: 'role_id',
-            choices: rolesArr,
+            choices: rolesList,
         },
-    ]).then(insertEmployee);
-}
+    ]).then(updateEmployee);
+};
 
+// Funtion for directing the user to the next steps 
 const handleAction = ({ action }) => {
     console.log(`ACTION ${action}`);
     switch(action) {
         case 'View All Employees': {
-            db.query('SELECT roles.id AS id, employees.first_name AS first_name, employees.last_name AS last_name, roles.title AS title, roles.salary AS salary, departments.name AS department, manager.last_name AS manager FROM employees LEFT JOIN employees manager ON manager.id = employees.manager_id JOIN roles ON employees.role_id = roles.id JOIN departments ON roles.department_id = departments.id',
+            db.query('SELECT roles.id, employees.first_name, employees.last_name, roles.title, roles.salary, departments.name AS department, manager.last_name AS manager FROM employees LEFT JOIN employees manager ON manager.id = employees.manager_id JOIN roles ON employees.role_id = roles.id JOIN departments ON roles.department_id = departments.id',
             (err, results) => {
                 console.table(results);
                 init();
@@ -153,7 +176,7 @@ const handleAction = ({ action }) => {
             break;
         }
         case 'View All Roles': {
-            db.query('SELECT roles.id AS id, roles.title AS title, departments.name AS department, roles.salary AS salary FROM roles JOIN departments ON roles.department_id = departments.id',
+            db.query('SELECT roles.id, roles.title, departments.name AS department, roles.salary FROM roles JOIN departments ON roles.department_id = departments.id',
             (err, results) => {
                 console.table(results);
                 init();
@@ -183,11 +206,9 @@ const handleAction = ({ action }) => {
         }
         default: {
             process.exit();
-        }
-    }
-}
-
-
+        };
+    };
+};
 
 const init = () => {
     prompt({
