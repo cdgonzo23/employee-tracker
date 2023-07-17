@@ -144,7 +144,7 @@ const updateAnEmployee = () => {
         {
             message: 'Which employees role do you want to update?',
             type: 'rawlist',
-            name: 'last_name',
+            name: 'id',
             choices: employeeList,
         },
         {
